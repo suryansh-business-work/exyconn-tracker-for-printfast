@@ -1,5 +1,4 @@
 name: Exyconn Tracker For Print fast Node Js Backend Server
-description: Deploy Node.js App via Docker & SSH
 
 on:
   push:
