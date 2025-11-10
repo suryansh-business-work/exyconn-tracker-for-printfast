@@ -7,6 +7,35 @@ const app = express();
 const PORT = process.env.PORT || 4003;
 const STORAGE_FILE = path.join(__dirname, 'storage', 'ae2aeb935c2a8c7a80fb116093ef35ca');
 
+// Lightweight CORS handling: allow configurable origin via env var, default to '*'
+const CORS_ALLOW_ORIGIN = process.env.CORS_ALLOW_ORIGIN || '*';
+app.use((req, res, next) => {
+  // Allow origin (configurable)
+  res.setHeader('Access-Control-Allow-Origin', CORS_ALLOW_ORIGIN);
+
+  // Allow all common HTTP methods
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+
+  // If the browser sends a preflight request specifying desired headers, echo them back
+  // This effectively allows arbitrary request headers the client asks for.
+  const requestedHeaders = req.headers['access-control-request-headers'];
+  if (requestedHeaders) {
+    res.setHeader('Access-Control-Allow-Headers', requestedHeaders);
+  } else {
+    // Fallback safe set
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+  }
+
+  // Only set credentials when a specific origin is configured (not '*')
+  if (CORS_ALLOW_ORIGIN !== '*') res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // Cache preflight for 24 hours
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 // Register Handlebars
 const hbs = exphbs.create({ defaultLayout: 'main' });
 app.engine('handlebars', hbs.engine);
