@@ -1,0 +1,288 @@
+<h1>Print Fast Custom Tracker</h1>
+
+<!-- summary cards (Total hits, Unique IPs) -->
+<style>
+  .stats-row{ display:flex; gap:12px; align-items:stretch; flex-wrap:wrap; margin:8px 0 16px; }
+  .stat-card{
+    min-width:140px;
+    flex:1 1 160px;
+    background:#fff;
+    border:1px solid #e6edf3;
+    border-radius:8px;
+    padding:12px;
+    box-shadow:0 4px 12px rgba(16,24,40,0.04);
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+  .stat-title{ font-size:12px; color:#6b7280; margin-bottom:6px; }
+  .stat-value{ font-size:20px; font-weight:700; color:#111827; }
+  .stat-sub{ font-size:12px; color:#9ca3af; margin-top:6px; }
+  @media (max-width:640px){ .stats-row{ gap:8px } .stat-card{ min-width:120px } }
+</style>
+
+<!-- Add Font Awesome CDN for icons and a few small UX tweaks -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
+
+<!-- Added Material Components Web CSS and JS (Material design) -->
+<link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+<script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+
+<style>
+  /* small UX improvements for controls */
+  #controls-row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 12px; }
+
+  /* Ensure consistent sizing for MDC outlined text-field + native input */
+  .mdc-text-field, .mdc-text-field--outlined {
+    box-sizing: border-box;
+    height:40px;                 /* fixed height to match other controls */
+    display:inline-flex;
+    align-items:center;
+    min-width:220px;
+    border-radius:8px;
+    vertical-align:middle;
+    padding:0;                   /* visual outline handled by MDC */
+    background:transparent;
+  }
+
+  /* normalize the actual input inside MDC wrapper */
+  .mdc-text-field__input, #search-input {
+    box-sizing: border-box;
+    height:100%;
+    padding:0 12px;              /* internal left/right spacing */
+    border:0;
+    outline:0;
+    font-size:13px;
+    line-height:40px;           /* centers text vertically inside 40px field */
+    background:transparent;
+    min-width:160px;
+  }
+
+  /* Keep the notched outline visuals intact while preventing extra height */
+  .mdc-notched-outline { height:100%; }
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__trailing { height:100%; }
+
+  /* Buttons should match the same height and alignment */
+  .icon-btn{
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+    height:40px;
+    padding:0 12px;
+    border-radius:8px;
+    border:1px solid #e6edf3;
+    background:#fff;
+    cursor:pointer;
+    font-size:13px;
+    box-sizing:border-box;
+  }
+  .icon-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  #tz-display{ font-size:13px; color:#6b7280; margin-left:6px; }
+  /* make table header icons smaller and spaced */
+  .th-icon{ margin-left:8px; color:#9ca3af; font-size:12px; }
+</style>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div>
+      <div class="stat-title">Total hits</div>
+      <div id="total-hits" class="stat-value">{{#if summary}}{{summary.totalHits}}{{else}}0{{/if}}</div>
+    </div>
+    <div class="stat-sub">All recorded requests</div>
+  </div>
+
+  <div class="stat-card">
+    <div>
+      <div class="stat-title">Unique IPs</div>
+      <div id="unique-ips" class="stat-value">{{#if summary}}{{summary.uniqueIPs}}{{else}}0{{/if}}</div>
+    </div>
+    <div class="stat-sub">Distinct client IP addresses</div>
+  </div>
+</div>
+
+<div class="tracker-controls" style="margin-bottom:8px;">
+  <div id="controls-row">
+    <form id="delete-form" method="post" action="/dashboard/delete" onsubmit="return confirm('Delete ALL stored tracking data? This cannot be undone.');" style="display:inline;">
+      <!-- change: add MDC button classes so it receives ripple / material styling -->
+      <button type="submit" class="icon-btn mdc-button mdc-button--outlined" aria-label="Delete all data">
+        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+        <span>Delete all</span>
+      </button>
+    </form>
+
+    <div style="display:flex; gap:8px; align-items:center;">
+      <!-- change: use MDC outlined text-field wrapper for the search input -->
+      <span class="mdc-text-field mdc-text-field--outlined" style="min-width:220px;">
+        <input class="mdc-text-field__input" id="search-input" type="search" aria-label="Search requests" />
+        <span class="mdc-notched-outline">
+          <span class="mdc-notched-outline__leading"></span>
+          <span class="mdc-notched-outline__notch"><span class="mdc-floating-label">Search IP, id...</span></span>
+          <span class="mdc-notched-outline__trailing"></span>
+        </span>
+      </span>
+
+      <!-- change: clear button styled as an MDC button (ripples applied in init) -->
+      <button id="clear-search" class="icon-btn mdc-button" title="Clear search" aria-label="Clear search">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div id="tz-control" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+      <label for="tz-selector" style="font-size:13px;color:#6b7280;">Timezone</label>
+      <select id="tz-selector" aria-label="Timezone selector" style="padding:8px;border-radius:8px;border:1px solid #e6edf3;">
+        <option value="auto">Auto (browser)</option>
+        <option value="America/New_York">US (America/New_York)</option>
+        <option value="Asia/Kolkata">India (Asia/Kolkata)</option>
+      </select>
+      <div id="tz-display" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+
+{{#if tracker.requests}}
+  <!-- improved styles for the scrollable area and nicer table -->
+  <style>
+    :root{
+      --card-bg:#ffffff;
+      --muted:#6b7280;
+      --accent:#0f172a;
+      --border:#e6edf3;
+      --stripe:#fbfdff;
+      --primary:#2563eb;
+    }
+    #table-controls{
+      margin: 12px 0;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color:var(--muted);
+    }
+    #table-wrapper{
+      max-height: 480px;
+      overflow:auto;
+      border-radius:8px;
+      border:1px solid var(--border);
+      box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+      background: linear-gradient(180deg, var(--card-bg), var(--stripe));
+    }
+    .scrollable-table{
+      width:100%;
+      border-collapse:collapse;
+      font-family: inherit;
+      min-width:720px;
+    }
+    .scrollable-table thead th{
+      position: sticky;
+      top:0;
+      background: linear-gradient(180deg,#fff,#fbfdff);
+      z-index:2;
+      text-align:left;
+      padding:12px 14px;
+      font-weight:600;
+      font-size:13px;
+      color:var(--accent);
+      border-bottom:1px solid var(--border);
+    }
+    .scrollable-table tbody td{
+      padding:10px 14px;
+      font-size:13px;
+      color:#111827;
+      border-bottom:1px solid rgba(15,23,42,0.04);
+    }
+    .scrollable-table tbody tr:nth-child(even){
+      background: rgba(37,99,235,0.02);
+    }
+    .scrollable-table tbody tr:hover{
+      background: rgba(37,99,235,0.04);
+    }
+    .controls-btn{
+      background: #fff;
+      border:1px solid var(--border);
+      padding:6px 10px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .controls-btn[disabled]{ opacity:0.5; cursor:not-allowed; }
+    #page-info{ color:var(--muted); font-size:13px; }
+    #page-size{ padding:6px 8px; border-radius:6px; border:1px solid var(--border); }
+    @media (max-width:800px){
+      .scrollable-table{ min-width:600px; }
+    }
+  </style>
+
+  <!-- pagination controls -->
+  <div id="table-controls">
+    <label>Rows:
+      <select id="page-size">
+        <option value="5">5</option>
+        <option value="10" selected>10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
+    </label>
+
+    <!-- change: pagination buttons get MDC styling for visual consistency -->
+    <button id="prev-page" type="button" class="icon-btn mdc-button" aria-label="Previous page"><i class="fa-solid fa-chevron-left"></i></button>
+    <button id="next-page" type="button" class="icon-btn mdc-button" aria-label="Next page"><i class="fa-solid fa-chevron-right"></i></button>
+    <span id="page-info" style="margin-left:8px;">Page 1 / 1</span>
+  </div>
+
+  <!-- scrollable wrapper -->
+  <div id="table-wrapper">
+    <table id="tracker-table" class="scrollable-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>IP</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody id="tracker-tbody">
+        {{#each tracker.requests}}
+          <tr>
+            <td>{{this.id}}</td>
+            <!-- keep original ISO timestamp in data-ts for client formatting -->
+            <td><span class="ts" data-ts="{{this.timestamp}}">{{this.timestamp}}</span></td>
+            <td>{{this.ip}}</td>
+            <td>{{this.count}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+{{else}}
+  <p id="no-requests">No requests recorded.</p>
+{{/if}}
+
+<!-- include timezone client script (served from /public/js/timezone.js) -->
+<script src="/js/timezone.js"></script>
+<!-- include new table pagination script -->
+<script src="/js/table.js"></script>
+
+<!-- Added small initialization for MDC components; placed after other scripts so existing behavior remains intact -->
+<script>
+  // Initialize MDC ripples for buttons that now have mdc-button class
+  (function() {
+    if (window.mdc && window.mdc.ripple && window.mdc.textField) {
+      try {
+        // Attach ripples to all buttons that received the mdc-button class
+        Array.from(document.querySelectorAll('.mdc-button')).forEach(function(el){
+          new mdc.ripple.MDCRipple(el);
+        });
+
+        // Initialize the outlined text field for the search input
+        var tfEl = document.querySelector('.mdc-text-field');
+        if (tfEl) {
+          new mdc.textField.MDCTextField(tfEl);
+        }
+      } catch (e) {
+        console.warn('MDC init failed:', e);
+      }
+    }
+  })();
+</script>
