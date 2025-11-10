@@ -4,7 +4,7 @@ const fs = require('fs');
 const exphbs = require('express-handlebars');
 
 const app = express();
-const PORT = process.env.PORT || 4002;
+const PORT = process.env.PORT || 4003;
 const STORAGE_FILE = path.join(__dirname, 'storage', 'ae2aeb935c2a8c7a80fb116093ef35ca');
 
 // Register Handlebars

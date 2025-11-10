@@ -46,4 +46,4 @@ jobs:
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/exyconn-tracker-for-printfast:latest
             docker stop exyconn-tracker-for-printfast || true
             docker rm exyconn-tracker-for-printfast || true
-            docker run -d --name exyconn-tracker-for-printfast -p 4002:4002 --restart=always ${{ secrets.DOCKERHUB_USERNAME }}/exyconn-tracker-for-printfast:latest
+            docker run -d --name exyconn-tracker-for-printfast -p 4003:4003 --restart=always ${{ secrets.DOCKERHUB_USERNAME }}/exyconn-tracker-for-printfast:latest
