@@ -7,6 +7,38 @@ const app = express();
 const PORT = process.env.PORT || 4003;
 const STORAGE_FILE = path.join(__dirname, 'storage', 'ae2aeb935c2a8c7a80fb116093ef35ca');
 
+// GeoIP helper: prefer node-geoip (if installed), fall back to geoip-lite.
+let geoipLib = null;
+try { geoipLib = require('node-geoip'); }
+catch (e) {
+  try { geoipLib = require('geoip-lite'); }
+  catch (e2) { geoipLib = null; }
+}
+let tzLookup = null;
+try { tzLookup = require('tz-lookup'); } catch (e) { tzLookup = null; }
+
+function countryCodeToEmoji(code) {
+  if (!code || typeof code !== 'string') return '';
+  // convert 'US' -> regional indicator symbols 🇺🇸
+  try {
+    return code.toUpperCase().split('').map(ch => String.fromCodePoint(0x1F1E6 + ch.charCodeAt(0) - 65)).join('');
+  } catch (e) { return ''; }
+}
+
+function lookupGeo(ip) {
+  if (!geoipLib) return null;
+  try {
+    // geoip-lite exposes lookup(ip)
+    if (typeof geoipLib.lookup === 'function') return geoipLib.lookup(ip) || null;
+    // node-geoip may expose getLocation or lookupSync
+    if (typeof geoipLib.getLocation === 'function') return geoipLib.getLocation(ip) || null;
+    if (typeof geoipLib.lookupSync === 'function') return geoipLib.lookupSync(ip) || null;
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
 // Lightweight CORS handling: allow configurable origin via env var, default to '*'
 const CORS_ALLOW_ORIGIN = process.env.CORS_ALLOW_ORIGIN || '*';
 app.use((req, res, next) => {
@@ -74,11 +106,31 @@ app.get('/pixel', async (req, res) => {
 
     // increment count and create record
     tracker.count = (tracker.count || 0) + 1;
+
+    // try to enrich with geo information (country, region, city, ll, timezone)
+    const geo = lookupGeo(ip);
+    let timezone = (geo && geo.timezone) ? geo.timezone : null;
+    if (!timezone && geo && Array.isArray(geo.ll) && tzLookup) {
+      try { timezone = tzLookup(geo.ll[0], geo.ll[1]); } catch (e) { timezone = timezone || null; }
+    }
+
+    const country = (geo && (geo.country || geo.countryCode)) ? (geo.country || geo.countryCode) : null;
+    const region = (geo && (geo.region || geo.regionName)) ? (geo.region || geo.regionName) : null;
+    const city = (geo && geo.city) ? geo.city : null;
+    const ll = (geo && geo.ll) ? geo.ll : null;
+    const flag = country ? countryCodeToEmoji(country) : '';
+
     const record = {
       id: tracker.count,
       timestamp: new Date().toISOString(),
       ip,
-      count: tracker.count
+      count: tracker.count,
+      country: country || null,
+      region: region || null,
+      city: city || null,
+      timezone: timezone || null,
+      ll: ll || null,
+      flag: flag
     };
 
     // push record

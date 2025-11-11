@@ -108,11 +108,14 @@
     // read rows from DOM into objects (preserve original data-ts)
     const rows = Array.from(tbody.querySelectorAll('tr')).map(tr => {
       const cells = tr.querySelectorAll('td');
+      const locationCell = cells[3];
       return {
         id: cells[0]?.textContent?.trim() || '',
         timestampIso: cells[1]?.querySelector('.ts')?.getAttribute('data-ts') || cells[1]?.textContent?.trim() || '',
         ip: cells[2]?.textContent?.trim() || '',
-        count: cells[3]?.textContent?.trim() || '',
+        city: locationCell?.querySelector('.loc-city')?.textContent?.trim() || '',
+        timezone: locationCell?.querySelector('.loc-tz')?.textContent?.trim() || '',
+        count: cells[4]?.textContent?.trim() || '',
         rawHtml: tr.innerHTML
       };
     });
@@ -136,7 +139,9 @@
         r.id.toLowerCase().includes(q) ||
         r.ip.toLowerCase().includes(q) ||
         r.timestampIso.toLowerCase().includes(q) ||
-        r.count.toLowerCase().includes(q)
+        r.count.toLowerCase().includes(q) ||
+        (r.city || '').toLowerCase().includes(q) ||
+        (r.timezone || '').toLowerCase().includes(q)
       );
     }
 

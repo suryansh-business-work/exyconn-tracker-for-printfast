@@ -239,6 +239,7 @@
           <th>ID</th>
           <th>Timestamp</th>
           <th>IP</th>
+          <th>Location</th>
           <th>Count</th>
         </tr>
       </thead>
@@ -249,6 +250,13 @@
             <!-- keep original ISO timestamp in data-ts for client formatting -->
             <td><span class="ts" data-ts="{{this.timestamp}}">{{this.timestamp}}</span></td>
             <td>{{this.ip}}</td>
+            <td class="loc-cell">
+              <span class="loc-flag" aria-hidden="true">{{this.flag}}</span>
+              <div style="display:inline-block; vertical-align:middle; margin-left:8px;">
+                <div class="loc-city" style="font-weight:600">{{#if this.city}}{{this.city}}{{else}}&ndash;{{/if}}</div>
+                <div class="loc-tz" style="color:#6b7280; font-size:12px">{{#if this.timezone}}{{this.timezone}}{{else}}&ndash;{{/if}}</div>
+              </div>
+            </td>
             <td>{{this.count}}</td>
           </tr>
         {{/each}}
