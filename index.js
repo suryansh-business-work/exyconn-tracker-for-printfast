@@ -82,6 +82,9 @@ app.get('/pixel', async (req, res) => {
   try {
     // get IP (respecting X-Forwarded-For if present)
     const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim();
+    
+    // get referrer (the page that made the request)
+    const referrer = req.headers['referer'] || req.headers['referrer'] || 'Direct';
 
     // read and parse storage file (safe fallback)
     let raw = null;
@@ -124,6 +127,7 @@ app.get('/pixel', async (req, res) => {
       id: tracker.count,
       timestamp: new Date().toISOString(),
       ip,
+      referrer: referrer,
       count: tracker.count,
       country: country || null,
       region: region || null,

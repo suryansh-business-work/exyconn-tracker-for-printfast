@@ -1,4 +1,289 @@
-<h1>Print Fast Custom Tracker</h1>
+<!-- Beautiful Responsive Header -->
+<header style="
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 40px;
+  margin: -20px -20px 30px -20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+">
+  <div style="
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  ">
+    <!-- Logo Section -->
+    <div style="
+      background: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    ">
+      <img 
+        src="https://dqj17tese79do.cloudfront.net/printfast/images/websitelogos/retailer_site_logo776.png" 
+        alt="PrintFast Logo" 
+        style="height: 45px; width: auto; display: block;"
+        onerror="this.style.display='none'"
+      />
+      <div style="border-left: 2px solid #e5e7eb; height: 40px; margin: 0 4px;"></div>
+      <div>
+        <div style="font-size: 13px; color: #6b7280; font-weight: 500;">Analytics Dashboard</div>
+        <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">Real-time Tracking</div>
+      </div>
+    </div>
+
+    <!-- Logout Button -->
+    <button id="logout-btn" style="
+      display: none;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.95);
+      color: #dc2626;
+      border: 2px solid rgba(220, 38, 38, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    ">
+      <i class="fa-solid fa-right-from-bracket" style="margin-right: 8px;"></i>
+      Logout
+    </button>
+  </div>
+</header>
+
+<style>
+  /* Header responsive styles */
+  @media (max-width: 768px) {
+    header {
+      padding: 16px 20px !important;
+      margin: -16px -16px 24px -16px !important;
+    }
+    header > div {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    header #logout-btn {
+      width: 100%;
+    }
+  }
+  
+  #logout-btn:hover {
+    background: white;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  }
+  
+  #logout-btn:active {
+    transform: translateY(0);
+  }
+  
+  /* Remove default page title */
+  h1 {
+    display: none;
+  }
+  body {
+    margin: 0;
+    height: 100%;
+  }
+</style>
+
+<!-- Password Protection Overlay -->
+<div id="auth-overlay" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+">
+  <div style="
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+  ">
+    <img 
+      src="https://dqj17tese79do.cloudfront.net/printfast/images/websitelogos/retailer_site_logo776.png" 
+      alt="PrintFast Logo" 
+      style="max-width: 200px; height: auto; margin-bottom: 24px;"
+      onerror="this.style.display='none'"
+    />
+    <h2 style="margin: 0 0 8px; color: #111827; font-size: 24px; font-weight: 600;">
+      Tracker Authentication
+    </h2>
+    <p style="margin: 0 0 24px; color: #6b7280; font-size: 14px;">
+      Enter password to access the dashboard
+    </p>
+    
+    <input 
+      type="password" 
+      id="auth-password" 
+      placeholder="Enter password"
+      style="
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+      "
+      autocomplete="off"
+    />
+    
+    <button 
+      id="auth-submit" 
+      style="
+        width: 100%;
+        padding: 12px 16px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      "
+    >
+      Unlock Dashboard
+    </button>
+    
+    <div id="auth-error" style="
+      margin-top: 12px;
+      color: #dc2626;
+      font-size: 13px;
+      display: none;
+    ">
+      Incorrect password. Please try again.
+    </div>
+  </div>
+</div>
+
+<style>
+  #auth-password:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
+  
+  #auth-submit:hover {
+    background: #1d4ed8;
+  }
+  
+  #auth-submit:active {
+    background: #1e40af;
+  }
+  
+  body.auth-locked {
+    overflow: hidden;
+  }
+</style>
+
+<script>
+  (function() {
+    const CORRECT_PASSWORD = 'print-fast1025';
+    const AUTH_KEY = 'tracker_auth_session';
+    
+    const overlay = document.getElementById('auth-overlay');
+    const passwordInput = document.getElementById('auth-password');
+    const submitBtn = document.getElementById('auth-submit');
+    const errorMsg = document.getElementById('auth-error');
+    const logoutBtn = document.getElementById('logout-btn');
+    
+    // Check if already authenticated in this session
+    if (sessionStorage.getItem(AUTH_KEY) === 'true') {
+      overlay.style.display = 'none';
+      document.body.classList.remove('auth-locked');
+      logoutBtn.style.display = 'inline-block';
+    } else {
+      document.body.classList.add('auth-locked');
+      logoutBtn.style.display = 'none';
+      // Focus password input after a brief delay
+      setTimeout(() => passwordInput.focus(), 100);
+    }
+    
+    function checkPassword() {
+      const entered = passwordInput.value;
+      
+      if (entered === CORRECT_PASSWORD) {
+        // Correct password
+        sessionStorage.setItem(AUTH_KEY, 'true');
+        overlay.style.transition = 'opacity 0.3s ease';
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          document.body.classList.remove('auth-locked');
+          logoutBtn.style.display = 'inline-block';
+        }, 300);
+        errorMsg.style.display = 'none';
+      } else {
+        // Wrong password
+        errorMsg.style.display = 'block';
+        passwordInput.value = '';
+        passwordInput.style.borderColor = '#dc2626';
+        passwordInput.focus();
+        
+        // Shake animation
+        passwordInput.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+          passwordInput.style.animation = '';
+          passwordInput.style.borderColor = '#e5e7eb';
+        }, 500);
+      }
+    }
+    
+    // Logout functionality
+    logoutBtn.addEventListener('click', function() {
+      if (confirm('Are you sure you want to logout?')) {
+        sessionStorage.removeItem(AUTH_KEY);
+        logoutBtn.style.display = 'none';
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+        document.body.classList.add('auth-locked');
+        passwordInput.value = '';
+        errorMsg.style.display = 'none';
+        setTimeout(() => passwordInput.focus(), 100);
+      }
+    });
+    
+    submitBtn.addEventListener('click', checkPassword);
+    
+    passwordInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        checkPassword();
+      }
+    });
+    
+    // Add shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+        20%, 40%, 60%, 80% { transform: translateX(8px); }
+      }
+    `;
+    document.head.appendChild(style);
+  })();
+</script>
 
 <!-- summary cards (Total hits, Unique IPs) -->
 <style>
@@ -129,6 +414,56 @@
     position: relative;
     height: 280px;
   }
+  .date-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
+  .date-filter-btn {
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #374151;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .date-filter-btn:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+  }
+  .date-filter-btn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+  }
+  .filter-count {
+    background: #e5e7eb;
+    color: #374151;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+  }
+  .date-filter-btn:hover .filter-count {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+  .date-filter-btn.active .filter-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+  }
   @media (max-width: 1024px) {
     .charts-container {
       grid-template-columns: 1fr;
@@ -137,6 +472,34 @@
 </style>
 
 {{#if tracker.requests}}
+<!-- Date Filter Buttons -->
+<div class="date-filters">
+  <button class="date-filter-btn active" data-filter="all">
+    <span>All Time</span>
+    <span class="filter-count" data-count="all">0</span>
+  </button>
+  <button class="date-filter-btn" data-filter="today">
+    <span>Today</span>
+    <span class="filter-count" data-count="today">0</span>
+  </button>
+  <button class="date-filter-btn" data-filter="yesterday">
+    <span>Yesterday</span>
+    <span class="filter-count" data-count="yesterday">0</span>
+  </button>
+  <button class="date-filter-btn" data-filter="last7days">
+    <span>Last 7 Days</span>
+    <span class="filter-count" data-count="last7days">0</span>
+  </button>
+  <button class="date-filter-btn" data-filter="thismonth">
+    <span>This Month</span>
+    <span class="filter-count" data-count="thismonth">0</span>
+  </button>
+  <button class="date-filter-btn" data-filter="lastmonth">
+    <span>Last Month</span>
+    <span class="filter-count" data-count="lastmonth">0</span>
+  </button>
+</div>
+
 <div class="charts-container">
   <div class="chart-card">
     <div class="chart-title">Daily Hits</div>
@@ -244,6 +607,33 @@
       color:#111827;
       border-bottom:1px solid rgba(15,23,42,0.04);
     }
+    .scrollable-table tbody td.referrer-cell{
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      color: #2563eb;
+    }
+    .referrer-cell a{
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .referrer-cell a:hover{
+      text-decoration: underline;
+    }
+    .scrollable-table tbody td.referrer-cell:hover{
+      overflow: visible;
+      white-space: normal;
+      word-break: break-all;
+    }
+    .referrer-direct{
+      color: #6b7280;
+      font-style: italic;
+    }
+    .ip-column{
+      display: none;
+    }
     .scrollable-table tbody tr:nth-child(even){
       background: rgba(37,99,235,0.02);
     }
@@ -290,7 +680,8 @@
         <tr>
           <th>ID</th>
           <th>Timestamp</th>
-          <th>IP</th>
+          <th class="ip-column">IP</th>
+          <th>Referrer Page</th>
           <th>Location</th>
           <th>Count</th>
         </tr>
@@ -301,7 +692,14 @@
             <td>{{this.id}}</td>
             <!-- keep original ISO timestamp in data-ts for client formatting -->
             <td><span class="ts" data-ts="{{this.timestamp}}">{{this.timestamp}}</span></td>
-            <td>{{this.ip}}</td>
+            <td class="ip-column">{{this.ip}}</td>
+            <td class="referrer-cell" title="{{this.referrer}}" data-referrer="{{this.referrer}}">
+              {{#if this.referrer}}
+                <a href="{{this.referrer}}" target="_blank" rel="noopener noreferrer" class="referrer-link">{{this.referrer}}</a>
+              {{else}}
+                <span class="referrer-direct">Direct</span>
+              {{/if}}
+            </td>
             <td class="loc-cell">
               <span class="loc-flag" aria-hidden="true">{{this.flag}}</span>
               <div style="display:inline-block; vertical-align:middle; margin-left:8px;">
@@ -346,5 +744,13 @@
         console.warn('MDC init failed:', e);
       }
     }
+
+    // Handle "Direct" referrer display
+    document.querySelectorAll('.referrer-cell').forEach(function(cell) {
+      var referrer = cell.getAttribute('data-referrer');
+      if (!referrer || referrer === 'Direct' || referrer.trim() === '') {
+        cell.innerHTML = '<span class="referrer-direct">Direct</span>';
+      }
+    });
   })();
 </script>

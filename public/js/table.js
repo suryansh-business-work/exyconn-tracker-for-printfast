@@ -106,17 +106,19 @@
     if (!tbody) return;
 
     // read rows from DOM into objects (preserve original data-ts)
-    const rows = Array.from(tbody.querySelectorAll('tr')).map(tr => {
+    const allRowsData = Array.from(tbody.querySelectorAll('tr')).map(tr => {
       const cells = tr.querySelectorAll('td');
-      const locationCell = cells[3];
+      const locationCell = cells[4];
       return {
         id: cells[0]?.textContent?.trim() || '',
         timestampIso: cells[1]?.querySelector('.ts')?.getAttribute('data-ts') || cells[1]?.textContent?.trim() || '',
         ip: cells[2]?.textContent?.trim() || '',
+        referrer: cells[3]?.textContent?.trim() || '',
         city: locationCell?.querySelector('.loc-city')?.textContent?.trim() || '',
         timezone: locationCell?.querySelector('.loc-tz')?.textContent?.trim() || '',
-        count: cells[4]?.textContent?.trim() || '',
-        rawHtml: tr.innerHTML
+        count: cells[5]?.textContent?.trim() || '',
+        rawHtml: tr.innerHTML,
+        element: tr
       };
     });
 
@@ -131,8 +133,76 @@
     let pageSize = parseInt(pageSizeSelect.value, 10) || 10;
     let currentPage = 1;
     let currentFilter = '';
+    let currentDateFilter = 'all';
+
+    function getDateRange(filter) {
+      const now = new Date();
+      // Use UTC dates for comparison since timestamps are in UTC
+      const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      
+      switch(filter) {
+        case 'today':
+          const todayEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+          return {
+            start: today,
+            end: todayEnd
+          };
+        case 'yesterday':
+          const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+          return {
+            start: yesterday,
+            end: today
+          };
+        case 'last7days':
+          const last7 = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+          const sevenDaysEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          return {
+            start: last7,
+            end: sevenDaysEnd
+          };
+        case 'thismonth':
+          const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+          const monthEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          return {
+            start: monthStart,
+            end: monthEnd
+          };
+        case 'lastmonth':
+          const lastMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+          const lastMonthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+          return {
+            start: lastMonthStart,
+            end: lastMonthEnd
+          };
+        default: // 'all'
+          return null;
+      }
+    }
+
+    function filterByDate(rows, filter) {
+      if (filter === 'all') return rows;
+      
+      const range = getDateRange(filter);
+      if (!range) return rows;
+      
+      return rows.filter(r => {
+        if (!r.timestampIso) return false;
+        try {
+          const date = new Date(r.timestampIso);
+          return date >= range.start && date < range.end;
+        } catch (e) {
+          return false;
+        }
+      });
+    }
 
     function filteredRows() {
+      let rows = allRowsData;
+      
+      // Apply date filter first
+      rows = filterByDate(rows, currentDateFilter);
+      
+      // Then apply text search
       if (!currentFilter) return rows;
       const q = currentFilter.toLowerCase();
       return rows.filter(r =>
@@ -141,7 +211,8 @@
         r.timestampIso.toLowerCase().includes(q) ||
         r.count.toLowerCase().includes(q) ||
         (r.city || '').toLowerCase().includes(q) ||
-        (r.timezone || '').toLowerCase().includes(q)
+        (r.timezone || '').toLowerCase().includes(q) ||
+        (r.referrer || '').toLowerCase().includes(q)
       );
     }
 
@@ -216,6 +287,18 @@
       if (e.key === 'p') { prevBtn.click(); }
       if (e.key === '/') { e.preventDefault(); searchInput?.focus(); }
     });
+
+    // Expose function for charts.js to update table filter
+    window.updateTableFilter = function(dateFilter) {
+      try {
+        console.log('Table filter updated to:', dateFilter);
+        currentDateFilter = dateFilter;
+        currentPage = 1;
+        render();
+      } catch (e) {
+        console.error('Error updating table filter:', e);
+      }
+    };
 
     // initial render
     render();
